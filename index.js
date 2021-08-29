@@ -13,7 +13,7 @@ client.get = util.promisify(client.get);
 const app = express();
 app.use(express.json());
 
-app.post("/", async(req, res) => {
+app.post("/", async (req, res) => {
   const { key, value } = req.body;
   const response = await client.set(key, value)
   res.json(response)
@@ -25,10 +25,18 @@ app.get("/", async (req, res) => {
   res.json(value)
 })
 
-app.get("/posts/:id", async(req, res) => {
+app.get("/posts/:id", async (req, res) => {
   const { id } = req.params;
 
+  const cachedPost = await client.get(`post-${id}`)
+
+  if (cachedPost) {
+    return res.json(JSON.parse(cachedPost))
+  }
+
   const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${id}`);
+
+  client.set(`post-${id}`, JSON.stringify(response.data))
 
   return res.json(response.data)
 })
